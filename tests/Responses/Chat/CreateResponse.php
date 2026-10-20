@@ -21,6 +21,38 @@ test('from', function () {
         ->meta()->toBeInstanceOf(MetaInformation::class);
 });
 
+test('from without id', function () {
+    $completion = CreateResponse::from(chatCompletionWithoutId(), meta());
+
+    expect($completion)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->id->toBeNull()
+        ->object->toBe('chat.completion')
+        ->created->toBe(1677652288)
+        ->model->toBe('gpt-3.5-turbo')
+        ->systemFingerprint->toBeNull()
+        ->choices->toBeArray()->toHaveCount(1)
+        ->choices->each->toBeInstanceOf(CreateResponseChoice::class)
+        ->usage->toBeInstanceOf(CreateResponseUsage::class)
+        ->meta()->toBeInstanceOf(MetaInformation::class);
+});
+
+test('from without usage', function () {
+    $completion = CreateResponse::from(chatCompletionWithoutUsage(), meta());
+
+    expect($completion)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->id->toBe('chatcmpl-123')
+        ->object->toBe('chat.completion')
+        ->created->toBe(1677652288)
+        ->model->toBe('gpt-3.5-turbo')
+        ->systemFingerprint->toBeNull()
+        ->choices->toBeArray()->toHaveCount(1)
+        ->choices->each->toBeInstanceOf(CreateResponseChoice::class)
+        ->usage->toBeNull()
+        ->meta()->toBeInstanceOf(MetaInformation::class);
+});
+
 test('from with system fingerprint', function () {
     $completion = CreateResponse::from(chatCompletionWithSystemFingerprint(), meta());
 
@@ -69,6 +101,14 @@ test('from tool calls response', function () {
         ->choices->each->toBeInstanceOf(CreateResponseChoice::class)
         ->usage->toBeInstanceOf(CreateResponseUsage::class)
         ->meta()->toBeInstanceOf(MetaInformation::class);
+});
+
+test('from audio modality response', function () {
+    $result = CreateResponse::from(chatCompleteAudioModality(), meta());
+
+    expect($result->usage)
+        ->promptTokensDetails->audioTokens->toBe(100)
+        ->completionTokensDetails->audioTokens->toBe(100);
 });
 
 test('as array accessible', function () {
@@ -170,4 +210,83 @@ test('fake with tool calls', function () {
         ->type->toBe('function')
         ->function->name->toBe('get_current_weather')
         ->function->arguments->toBe("{\n  \"location\": \"Boston, MA\"\n}");
+});
+
+test('from (OpenRouter)', function () {
+    $completion = CreateResponse::from(chatCompletionOpenRouter(), meta());
+
+    expect($completion)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->id->toBe('gen-123')
+        ->object->toBe('chat.completion')
+        ->created->toBe(1744873707)
+        ->model->toBe('mistral/ministral-8b')
+        ->systemFingerprint->toBeNull()
+        ->choices->toBeArray()->toHaveCount(1)
+        ->choices->each->toBeInstanceOf(CreateResponseChoice::class)
+        ->usage->toBeInstanceOf(CreateResponseUsage::class)
+        ->meta()->toBeInstanceOf(MetaInformation::class);
+});
+
+test('from (LitemLLM)', function () {
+    $completion = CreateResponse::from(chatCompletionLiteLlmImage(), meta());
+
+    expect($completion)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->id->toBe('chatcmpl-123')
+        ->object->toBe('chat.completion')
+        ->created->toBe(1700000000)
+        ->model->toBe('litellm/gpt-4o-vision-preview')
+        ->systemFingerprint->toBeNull()
+        ->choices->toBeArray()->toHaveCount(1)
+        ->choices->each->toBeInstanceOf(CreateResponseChoice::class)
+        ->usage->toBeInstanceOf(CreateResponseUsage::class);
+});
+
+test('from (OpenRouter OpenAI)', function () {
+    $completion = CreateResponse::from(chatCompletionOpenRouterOpenAI(), meta());
+
+    expect($completion)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->id->toBe('gen-123')
+        ->object->toBe('chat.completion')
+        ->created->toBe(1744900650)
+        ->model->toBe('openai/gpt-4o-mini')
+        ->systemFingerprint->toBe('fp_0392822090')
+        ->choices->toBeArray()->toHaveCount(1)
+        ->choices->each->toBeInstanceOf(CreateResponseChoice::class)
+        ->usage->toBeInstanceOf(CreateResponseUsage::class)
+        ->meta()->toBeInstanceOf(MetaInformation::class);
+});
+
+test('from (OpenRouter Google)', function () {
+    $completion = CreateResponse::from(chatCompletionOpenRouterGoogle(), meta());
+
+    expect($completion)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->id->toBe('gen-123')
+        ->object->toBe('chat.completion')
+        ->created->toBe(1744910839)
+        ->model->toBe('google/gemini-2.5-pro-preview-03-25')
+        ->systemFingerprint->toBeNull()
+        ->choices->toBeArray()->toHaveCount(1)
+        ->choices->each->toBeInstanceOf(CreateResponseChoice::class)
+        ->usage->toBeInstanceOf(CreateResponseUsage::class)
+        ->meta()->toBeInstanceOf(MetaInformation::class);
+});
+
+test('from (OpenRouter xAI)', function () {
+    $completion = CreateResponse::from(chatCompletionOpenRouterXAI(), meta());
+
+    expect($completion)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->id->toBe('gen-123')
+        ->object->toBe('chat.completion')
+        ->created->toBe(1744911228)
+        ->model->toBe('x-ai/grok-3-mini-beta')
+        ->systemFingerprint->toBe('fp_d133ae3397')
+        ->choices->toBeArray()->toHaveCount(1)
+        ->choices->each->toBeInstanceOf(CreateResponseChoice::class)
+        ->usage->toBeInstanceOf(CreateResponseUsage::class)
+        ->meta()->toBeInstanceOf(MetaInformation::class);
 });

@@ -14,6 +14,30 @@ function model(): array
 }
 
 /**
+ * @return array<string, string>
+ */
+function googleModel(): array
+{
+    return [
+        'id' => 'text-davinci-003',
+        'object' => 'model',
+        'owned_by' => 'google',
+    ];
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function azureModel(): array
+{
+    return [
+        'id' => 'gpt-35-turbo',
+        'object' => 'model',
+        'created_at' => 1700000000,
+    ];
+}
+
+/**
  * @return array<string, mixed>
  */
 function modelList(): array

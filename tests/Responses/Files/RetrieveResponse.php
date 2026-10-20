@@ -12,6 +12,7 @@ test('from', function () {
         ->object->toBe('file')
         ->bytes->toBe(140)
         ->createdAt->toBe(1613779121)
+        ->expiresAt->toBe(null)
         ->filename->toBe('mydata.jsonl')
         ->purpose->toBe('fine-tune')
         ->meta()->toBeInstanceOf(MetaInformation::class);
@@ -26,6 +27,7 @@ test('from with status error', function () {
         ->object->toBe('file')
         ->bytes->toBe(181023)
         ->createdAt->toBe(1678253244)
+        ->expiresAt->toBe(null)
         ->filename->toBe('mydata_corrupt.jsonl')
         ->purpose->toBe('fine-tune')
         ->status->toBe('error')
@@ -45,9 +47,21 @@ test('from with byte is null', function () {
         ->object->toBe('file')
         ->bytes->toBeNull()
         ->createdAt->toBe(1613779121)
+        ->expiresAt->toBe(null)
         ->filename->toBe('mydata.jsonl')
         ->purpose->toBe('fine-tune')
         ->meta()->toBeInstanceOf(MetaInformation::class);
+});
+
+test('from with status_details missing', function () {
+    $data = fileResource();
+    unset($data['status_details']);
+
+    $result = RetrieveResponse::from($data, meta());
+
+    expect($result)
+        ->toBeInstanceOf(RetrieveResponse::class)
+        ->statusDetails->toBeNull();
 });
 
 test('as array accessible', function () {

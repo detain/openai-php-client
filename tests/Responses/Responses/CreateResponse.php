@@ -1,0 +1,274 @@
+<?php
+
+use OpenAI\Responses\Meta\MetaInformation;
+use OpenAI\Responses\Responses\CreateResponse;
+use OpenAI\Responses\Responses\CreateResponseFormat;
+use OpenAI\Responses\Responses\CreateResponseReasoning;
+use OpenAI\Responses\Responses\CreateResponseUsage;
+use OpenAI\Responses\Responses\Output\OutputFunctionToolCall;
+use OpenAI\Responses\Responses\Output\OutputProgram;
+use OpenAI\Responses\Responses\Output\OutputProgramOutput;
+use OpenAI\Responses\Responses\Output\OutputShellCall;
+use OpenAI\Responses\Responses\Output\OutputShellCallOutput;
+use OpenAI\Responses\Responses\RetrieveResponse;
+use OpenAI\Responses\Responses\Tool\ProgrammaticToolCallingTool;
+use OpenAI\Responses\Responses\Tool\ShellTool;
+use OpenAI\Responses\Responses\ToolChoice\HostedToolChoice;
+use OpenAI\Testing\Enums\OverrideStrategy;
+use OpenAI\Testing\Responses\Fixtures\Responses\Output\OutputShellCallFixture;
+use OpenAI\Testing\Responses\Fixtures\Responses\Output\OutputShellCallOutputFixture;
+
+test('from', function () {
+    $response = CreateResponse::from(createResponseResource(), meta());
+
+    expect($response)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->id->toBe('resp_67ccf18ef5fc8190b16dbee19bc54e5f087bb177ab789d5c')
+        ->object->toBe('response')
+        ->createdAt->toBe(1741484430)
+        ->status->toBe('completed')
+        ->error->toBeNull()
+        ->incompleteDetails->toBeNull()
+        ->instructions->toBeNull()
+        ->maxOutputTokens->toBeNull()
+        ->model->toBe('gpt-4o-2024-08-06')
+        ->output->toBeArray()
+        ->parallelToolCalls->toBeTrue()
+        ->previousResponseId->toBeNull()
+        ->reasoning->toBeInstanceOf(CreateResponseReasoning::class)
+        ->store->toBeTrue()
+        ->temperature->toBe(1.0)
+        ->text->toBeInstanceOf(CreateResponseFormat::class)
+        ->toolChoice->toBe('auto')
+        ->tools->toBeArray()
+        ->topP->toBe(1.0)
+        ->truncation->toBe('disabled')
+        ->usage->toBeInstanceOf(CreateResponseUsage::class)
+        ->user->toBeNull()
+        ->metadata->toBe([]);
+
+    expect($response->meta())
+        ->toBeInstanceOf(MetaInformation::class);
+});
+
+test('as array accessible', function () {
+    $response = CreateResponse::from(createResponseResource(), meta());
+
+    expect($response['id'])->toBe('resp_67ccf18ef5fc8190b16dbee19bc54e5f087bb177ab789d5c');
+});
+
+test('to array', function () {
+    $response = CreateResponse::from(createResponseResource(), meta());
+
+    $expected = createResponseResource();
+    $expected['output_text'] = 'As of today, March 9, 2025, one notable positive news story...';
+
+    expect($response->toArray())
+        ->toBeArray()
+        ->toBe($expected);
+});
+
+test('to array with no messages', function () {
+    $payload = createResponseResource();
+    $payload['output'] = [
+        outputMessageOnlyRefusal(),
+    ];
+
+    $response = CreateResponse::from($payload, meta());
+
+    expect($response->toArray())
+        ->toBeArray()
+        ->outputText->toBeNull();
+});
+
+test('fake', function () {
+    $response = CreateResponse::fake();
+
+    expect($response)
+        ->id->toBe('resp_67ccf18ef5fc8190b16dbee19bc54e5f087bb177ab789d5c');
+});
+
+test('fake with the "replace" and "merge" strategy override', function () {
+    $attributes = [
+        'output' => [
+            [
+                'id' => 'msg_67ccd2bf17f0819081ff3bb2cf6508e60bb6a6b452d3795b',
+                'role' => 'assistant',
+                'type' => 'message',
+                'status' => 'completed',
+                'content' => [
+                    [
+                        'type' => 'output_text',
+                        'text' => 'This is the fake test output',
+                        'annotations' => [],
+                    ],
+                ],
+            ],
+        ],
+    ];
+    $response = CreateResponse::fake(
+        $attributes,
+        strategy: OverrideStrategy::Replace
+    );
+
+    expect($response)
+        ->output->toBeArray()->toHaveCount(1)
+        ->outputText->toBe('This is the fake test output');
+
+    $response = CreateResponse::fake(
+        $attributes,
+    );
+
+    expect($response)
+        ->output->toBeArray()->toHaveCount(2)
+        ->outputText->toBe('This is the fake test output As of today, March 9, 2025, one notable positive news story...');
+});
+
+test('fake with override', function () {
+    $response = CreateResponse::fake([
+        'id' => 'resp_1234',
+        'object' => 'custom_response',
+        'status' => 'failed',
+        'output' => [
+            outputBasicMessage(),
+        ],
+    ]);
+
+    expect($response)
+        ->id->toBe('resp_1234')
+        ->object->toBe('custom_response')
+        ->status->toBe('failed')
+        ->output->toBeArray();
+
+    expect($response->output[0]['content'][0])
+        ->type->toBe('output_text')
+        ->text->toBe('This is a basic message.');
+});
+
+test('from with missing store field defaults to true', function () {
+    $response = CreateResponse::fake();
+
+    expect($response)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->store->toBeTrue();
+});
+
+test('from with null store field defaults to true', function () {
+    $response = CreateResponse::fake(['store' => null]);
+
+    expect($response)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->store->toBeTrue();
+});
+
+test('from with false store field', function () {
+    $response = CreateResponse::fake(['store' => false]);
+
+    expect($response)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->store->toBeFalse();
+});
+
+test('from with missing text field', function () {
+    $response = CreateResponse::fake(['text' => null]);
+
+    expect($response)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->text->toBeNull();
+});
+
+test('from with null text field', function () {
+    $response = CreateResponse::fake(['text' => null]);
+
+    expect($response)
+        ->toBeInstanceOf(CreateResponse::class)
+        ->text->toBeNull();
+});
+
+test('to array with null text field', function () {
+    $response = CreateResponse::fake(['text' => null]);
+
+    $array = $response->toArray();
+
+    expect($array)
+        ->toBeArray()
+        ->text->toBeNull();
+});
+
+test('programmatic tool calling output', function () {
+    $payload = createResponseResource();
+    $payload['output'] = [
+        outputProgram(),
+        outputFunctionToolCallFromProgram(),
+        outputProgramOutput(),
+    ];
+    $payload['tools'] = [
+        toolFunctionProgrammatic(),
+        toolProgrammaticToolCalling(),
+    ];
+    $payload['tool_choice'] = toolProgrammaticToolCalling();
+
+    $response = CreateResponse::from($payload, meta());
+
+    expect($response)
+        ->output->{0}->toBeInstanceOf(OutputProgram::class)
+        ->output->{1}->toBeInstanceOf(OutputFunctionToolCall::class)
+        ->output->{1}->caller->callerId->toBe('call_prog_123')
+        ->output->{2}->toBeInstanceOf(OutputProgramOutput::class)
+        ->tools->{1}->toBeInstanceOf(ProgrammaticToolCallingTool::class)
+        ->toolChoice->toBeInstanceOf(HostedToolChoice::class)
+        ->toolChoice->type->toBe('programmatic_tool_calling');
+
+    expect($response->toArray()['output'])
+        ->toBe($payload['output']);
+
+    expect($response->toArray()['tools'])
+        ->toBe($payload['tools']);
+
+    expect($response->toArray()['tool_choice'])
+        ->toBe($payload['tool_choice']);
+});
+
+test('from with apply patch tool choice', function () {
+    $payload = createResponseResource();
+    $payload['tool_choice'] = ['type' => 'apply_patch'];
+
+    $response = CreateResponse::from($payload, meta());
+
+    expect($response->toolChoice)
+        ->toBeInstanceOf(HostedToolChoice::class)
+        ->type->toBe('apply_patch');
+});
+
+test('parses shell tools independently of shell output', function () {
+    $attributes = createResponseResource();
+    $attributes['tools'] = [['type' => 'shell', 'environment' => ['type' => 'container_reference', 'container_id' => 'cntr_123']]];
+    $attributes['output'] = [];
+    $attributes['tool_choice'] = ['type' => 'shell'];
+
+    foreach ([CreateResponse::class, RetrieveResponse::class] as $class) {
+        $response = $class::from($attributes, meta());
+
+        expect($response->tools[0])->toBeInstanceOf(ShellTool::class);
+        expect($response->toArray()['tools'])->toEqual($attributes['tools']);
+        expect($response->toArray()['tool_choice'])->toBe(['type' => 'shell']);
+    }
+});
+
+test('parses shell output independently of shell tools', function () {
+    $attributes = createResponseResource();
+    $attributes['tools'] = [];
+    $attributes['output'] = [
+        OutputShellCallFixture::ATTRIBUTES,
+        OutputShellCallOutputFixture::ATTRIBUTES,
+    ];
+
+    foreach ([CreateResponse::class, RetrieveResponse::class] as $class) {
+        $response = $class::from($attributes, meta());
+
+        expect($response->output[0])->toBeInstanceOf(OutputShellCall::class);
+        expect($response->output[1])->toBeInstanceOf(OutputShellCallOutput::class);
+        expect($response->output[1]->output[0]->outcome->exitCode)->toBe(0);
+        expect($response->toArray()['output'])->toEqual($attributes['output']);
+    }
+});

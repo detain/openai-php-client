@@ -14,7 +14,7 @@ test('create', function () {
     $client = mockClient('POST', 'completions', [
         'model' => 'da-vince',
         'prompt' => 'hi',
-    ], \OpenAI\ValueObjects\Transporter\Response::from(completion(), metaHeaders()));
+    ], OpenAI\ValueObjects\Transporter\Response::from(completion(), metaHeaders()));
 
     $result = $client->completions()->create([
         'model' => 'da-vince',
@@ -52,12 +52,12 @@ test('create throws an exception if stream option is true', function () {
         'prompt' => 'hi',
         'stream' => true,
     ]);
-})->expectException(InvalidArgumentException::class);
+})->throws(InvalidArgumentException::class);
 
 test('create streamed', function () {
     $response = new Response(
-        body: new Stream(completionStream()),
         headers: metaHeaders(),
+        body: new Stream(completionStream()),
     );
 
     $client = mockStreamClient('POST', 'completions', [
@@ -93,6 +93,11 @@ test('create streamed', function () {
         ->index->toBe(0)
         ->logprobs->toBe(null)
         ->finishReason->toBeNull();
+
+    $iterator = iterator_to_array($result->getIterator());
+    $last = end($iterator);
+    expect($last->usage)
+        ->toBeInstanceOf(CreateResponseUsage::class);
 
     expect($result->meta())
         ->toBeInstanceOf(MetaInformation::class);

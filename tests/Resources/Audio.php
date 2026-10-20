@@ -5,16 +5,19 @@ use GuzzleHttp\Psr7\Stream;
 use OpenAI\Responses\Audio\SpeechStreamResponse;
 use OpenAI\Responses\Audio\TranscriptionResponse;
 use OpenAI\Responses\Audio\TranscriptionResponseSegment;
+use OpenAI\Responses\Audio\TranscriptionStreamResponse;
 use OpenAI\Responses\Audio\TranslationResponse;
 use OpenAI\Responses\Audio\TranslationResponseSegment;
 use OpenAI\Responses\Meta\MetaInformation;
+use OpenAI\Responses\StreamResponse;
+use OpenAI\ValueObjects\Transporter\AdaptableResponse;
 
 test('transcribe to text', function () {
     $client = mockClient('POST', 'audio/transcriptions', [
         'file' => audioFileResource(),
         'model' => 'whisper-1',
         'response_format' => 'text',
-    ], \OpenAI\ValueObjects\Transporter\Response::from(audioTranscriptionText(), metaHeaders()), validateParams: false);
+    ], AdaptableResponse::from(audioTranscriptionText(), metaHeaders()), methodName: 'requestStringOrObject', validateParams: false);
 
     $result = $client->audio()->transcribe([
         'file' => audioFileResource(),
@@ -39,7 +42,7 @@ test('transcribe to json', function () {
         'file' => audioFileResource(),
         'model' => 'whisper-1',
         'response_format' => 'json',
-    ], \OpenAI\ValueObjects\Transporter\Response::from(audioTranscriptionJson(), metaHeaders()), validateParams: false);
+    ], AdaptableResponse::from(audioTranscriptionJson(), metaHeaders()), methodName: 'requestStringOrObject', validateParams: false);
 
     $result = $client->audio()->transcribe([
         'file' => audioFileResource(),
@@ -64,7 +67,7 @@ test('transcribe to verbose json', function () {
         'file' => audioFileResource(),
         'model' => 'whisper-1',
         'response_format' => 'verbose_json',
-    ], \OpenAI\ValueObjects\Transporter\Response::from(audioTranscriptionVerboseJson(), metaHeaders()), validateParams: false);
+    ], AdaptableResponse::from(audioTranscriptionVerboseJson(), metaHeaders()), methodName: 'requestStringOrObject', validateParams: false);
 
     $result = $client->audio()->transcribe([
         'file' => audioFileResource(),
@@ -102,12 +105,41 @@ test('transcribe to verbose json', function () {
         ->toBeInstanceOf(MetaInformation::class);
 });
 
+test('transcribe to text streaming', function () {
+    $response = new Response(
+        headers: metaHeaders(),
+        body: new Stream(audioTranscriptionStream()),
+    );
+
+    $client = mockStreamClient('POST', 'audio/transcriptions', [
+        'file' => audioFileResource(),
+        'model' => 'gpt-4o-transcribe',
+        'stream' => true,
+    ], $response, false);
+
+    $result = $client->audio()->transcribeStreamed([
+        'file' => audioFileResource(),
+        'model' => 'gpt-4o-transcribe',
+    ]);
+
+    expect($result)
+        ->toBeInstanceOf(StreamResponse::class)
+        ->toBeInstanceOf(IteratorAggregate::class)
+        ->and($result->getIterator())
+        ->toBeInstanceOf(Iterator::class);
+
+    foreach ($result as $event) {
+        expect($event)
+            ->toBeInstanceOf(TranscriptionStreamResponse::class);
+    }
+});
+
 test('translate to text', function () {
     $client = mockClient('POST', 'audio/translations', [
         'file' => audioFileResource(),
         'model' => 'whisper-1',
         'response_format' => 'text',
-    ], \OpenAI\ValueObjects\Transporter\Response::from(audioTranslationText(), metaHeaders()), validateParams: false);
+    ], AdaptableResponse::from(audioTranslationText(), metaHeaders()), methodName: 'requestStringOrObject', validateParams: false);
 
     $result = $client->audio()->translate([
         'file' => audioFileResource(),
@@ -132,7 +164,7 @@ test('translate to json', function () {
         'file' => audioFileResource(),
         'model' => 'whisper-1',
         'response_format' => 'json',
-    ], \OpenAI\ValueObjects\Transporter\Response::from(audioTranslationJson(), metaHeaders()), validateParams: false);
+    ], AdaptableResponse::from(audioTranslationJson(), metaHeaders()), methodName: 'requestStringOrObject', validateParams: false);
 
     $result = $client->audio()->translate([
         'file' => audioFileResource(),
@@ -157,7 +189,7 @@ test('translate to verbose json', function () {
         'file' => audioFileResource(),
         'model' => 'whisper-1',
         'response_format' => 'verbose_json',
-    ], \OpenAI\ValueObjects\Transporter\Response::from(audioTranslationVerboseJson(), metaHeaders()), validateParams: false);
+    ], AdaptableResponse::from(audioTranslationVerboseJson(), metaHeaders()), methodName: 'requestStringOrObject', validateParams: false);
 
     $result = $client->audio()->translate([
         'file' => audioFileResource(),
@@ -215,15 +247,15 @@ test('text to speech', function () {
 
 test('text to speech streamed', function () {
     $response = new Response(
-        body: new Stream(speechStream()),
         headers: metaHeaders(),
+        body: new Stream(speechStream()),
     );
 
     $client = mockStreamClient('POST', 'audio/speech', [
         'model' => 'tts-1',
         'input' => 'Hello, how are you?',
         'voice' => 'alloy',
-    ], $response, 'requestContent');
+    ], $response);
 
     $result = $client->audio()->speechStreamed([
         'model' => 'tts-1',

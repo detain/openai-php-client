@@ -2,6 +2,8 @@
 
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Stream;
+use OpenAI\Exceptions\ErrorException;
+use OpenAI\Exceptions\InvalidArgumentException;
 use OpenAI\Responses\Chat\CreateResponse;
 use OpenAI\Responses\Chat\CreateResponseChoice;
 use OpenAI\Responses\Chat\CreateResponseUsage;
@@ -14,7 +16,7 @@ test('create', function () {
     $client = mockClient('POST', 'chat/completions', [
         'model' => 'gpt-3.5-turbo',
         'messages' => ['role' => 'user', 'content' => 'Hello!'],
-    ], \OpenAI\ValueObjects\Transporter\Response::from(chatCompletion(), metaHeaders()));
+    ], OpenAI\ValueObjects\Transporter\Response::from(chatCompletion(), metaHeaders()));
 
     $result = $client->chat()->create([
         'model' => 'gpt-3.5-turbo',
@@ -53,12 +55,12 @@ test('create throws an exception if stream option is true', function () {
         'messages' => ['role' => 'user', 'content' => 'Hello!'],
         'stream' => true,
     ]);
-})->throws(OpenAI\Exceptions\InvalidArgumentException::class, 'Stream option is not supported. Please use the createStreamed() method instead.');
+})->throws(InvalidArgumentException::class, 'Stream option is not supported. Please use the createStreamed() method instead.');
 
 test('create streamed', function () {
     $response = new Response(
-        body: new Stream(chatCompletionStream()),
         headers: metaHeaders(),
+        body: new Stream(chatCompletionStream()),
     );
 
     $client = mockStreamClient('POST', 'chat/completions', [
@@ -98,6 +100,57 @@ test('create streamed', function () {
 
     expect($result->meta())
         ->toBeInstanceOf(MetaInformation::class);
+
+    foreach ($result->getIterator() as $response) {
+        expect($response)
+            ->toBeInstanceOf(CreateStreamedResponse::class);
+    }
+});
+
+test('handles ping messages in stream', function () {
+    $response = new Response(
+        headers: metaHeaders(),
+        body: new Stream(chatCompletionStreamPing()),
+    );
+
+    $client = mockStreamClient('POST', 'chat/completions', [
+        'model' => 'gpt-3.5-turbo',
+        'messages' => ['role' => 'user', 'content' => 'Hello!'],
+        'stream' => true,
+    ], $response);
+
+    $stream = $client->chat()->createStreamed([
+        'model' => 'gpt-3.5-turbo',
+        'messages' => ['role' => 'user', 'content' => 'Hello!'],
+    ]);
+
+    foreach ($stream as $response) {
+        expect($response)
+            ->toBeInstanceOf(CreateStreamedResponse::class);
+    }
+});
+
+test('handles keepalive messages in stream', function () {
+    $response = new Response(
+        headers: metaHeaders(),
+        body: new Stream(chatCompletionStreamKeepAlive()),
+    );
+
+    $client = mockStreamClient('POST', 'chat/completions', [
+        'model' => 'gpt-3.5-turbo',
+        'messages' => ['role' => 'user', 'content' => 'Hello!'],
+        'stream' => true,
+    ], $response);
+
+    $stream = $client->chat()->createStreamed([
+        'model' => 'gpt-3.5-turbo',
+        'messages' => ['role' => 'user', 'content' => 'Hello!'],
+    ]);
+
+    foreach ($stream as $response) {
+        expect($response)
+            ->toBeInstanceOf(CreateStreamedResponse::class);
+    }
 });
 
 test('handles error messages in stream', function () {
@@ -117,7 +170,7 @@ test('handles error messages in stream', function () {
     ]);
 
     expect(fn () => $result->getIterator()->current())
-        ->toThrow(function (OpenAI\Exceptions\ErrorException $e) {
+        ->toThrow(function (ErrorException $e) {
             expect($e->getMessage())->toBe('The server had an error while processing your request. Sorry about that!')
                 ->and($e->getErrorMessage())->toBe('The server had an error while processing your request. Sorry about that!')
                 ->and($e->getErrorCode())->toBeNull()

@@ -1,0 +1,1 @@
+data: {"type":"response.output_item.done","output_index":0,"sequence_number":11,"item":{"id":"cmp_67ccf18f64008190a39b619f4c8455ef087bb177ab789d5c","encrypted_content":"encrypted_string_value","type":"compaction","created_by":"user_123"}}

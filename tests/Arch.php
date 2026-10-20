@@ -19,6 +19,7 @@ test('exceptions')
     ->expect('OpenAI\Exceptions')
     ->toOnlyUse([
         'Psr\Http\Client',
+        'Psr\Http\Message\ResponseInterface',
     ])->toImplement(Throwable::class);
 
 test('resources')->expect('OpenAI\Resources')->toOnlyUse([
@@ -30,6 +31,7 @@ test('resources')->expect('OpenAI\Resources')->toOnlyUse([
 
 test('responses')->expect('OpenAI\Responses')->toOnlyUse([
     'Http\Discovery\Psr17Factory',
+    'OpenAI\Actions',
     'OpenAI\Enums',
     'OpenAI\Exceptions\ErrorException',
     'OpenAI\Exceptions\UnknownEventException',
@@ -56,7 +58,7 @@ test('client')->expect('OpenAI\Client')->toOnlyUse([
 
 test('openai')->expect('OpenAI')->toOnlyUse([
     'GuzzleHttp\Client',
-    'GuzzleHttp\Exception\ClientException',
+    'GuzzleHttp\Exception\BadResponseException',
     'Http\Discovery\Psr17Factory',
     'Http\Discovery\Psr18ClientDiscovery',
     'Http\Message\MultipartStream\MultipartStreamBuilder',

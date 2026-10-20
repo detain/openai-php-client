@@ -1,0 +1,1 @@
+data: {"type":"response.output_item.added","output_index":0,"sequence_number":12,"item":{"id":"tsc_67ccf18f64008190a39b619f4c8455ef087bb177ab789d5c","arguments":[],"call_id":"call_67ccf18f64008190a39b619f4c8455ef087bb177ab789d5c","execution":"server","status":"in_progress","type":"tool_search_call","created_by":"user_123"}}
